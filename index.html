@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>El Mapa de lo que Desaparece | Zamarrito Pechinegro</title>
+  <style>
+    :root {
+      --bg: #0b0d10;
+      --surface: #141820;
+      --border: #252c38;
+      --text: #f2f4f8;
+      --muted: #9aa4b5;
+      --accent: #8b5cf6;       /* Violeta garganta del Zamarrito */
+      --accent-glow: #a78bfa;
+      --emerald: #10b981;      /* Bosque nublado */
+      --danger: #ef4444;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow-x: hidden;
+      line-height: 1.5;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 460px;
+      min-height: 100dvh;
+      padding: 28px 22px 40px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      position: relative;
+    }
+
+    .screen {
+      display: none;
+      flex-direction: column;
+      gap: 20px;
+      animation: fadeIn 0.55s ease forwards;
+    }
+
+    .screen.active {
+      display: flex;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .eyebrow {
+      font-size: 0.72rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 1.65rem;
+      font-weight: 700;
+      line-height: 1.2;
+      text-align: center;
+      letter-spacing: -0.02em;
+    }
+
+    h2 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      line-height: 1.25;
+      letter-spacing: -0.01em;
+    }
+
+    p {
+      color: var(--muted);
+      font-size: 0.96rem;
+    }
+
+    .center { text-align: center; }
+
+    /* --- PANTALLA 1: ESTÍMULO DE TRANSACCIÓN --- */
+    .bird-stage {
+      position: relative;
+      width: 240px;
+      height: 240px;
+      margin: 6px auto;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      touch-action: none;
+    }
+
+    .progress-ring {
+      position: absolute;
+      inset: 0;
+      transform: rotate(-90deg);
+    }
+
+    .progress-ring circle {
+      fill: none;
+      stroke-width: 4;
+    }
+
+    .ring-bg {
+      stroke: #1f2530;
+    }
+
+    .ring-fill {
+      stroke: url(#ringGrad);
+      stroke-linecap: round;
+      stroke-dasharray: 691;
+      stroke-dashoffset: 691;
+      transition: stroke-dashoffset 0.08s linear;
+    }
+
+    .bird-svg {
+      width: 170px;
+      height: 170px;
+      filter: grayscale(100%) brightness(0.85) opacity(0.35);
+      transition: filter 0.18s linear, transform 0.25s ease;
+      pointer-events: none;
+    }
+
+    .timer-display {
+      font-variant-numeric: tabular-nums;
+      font-size: 1.15rem;
+      font-weight: 600;
+      text-align: center;
+      color: var(--text);
+      letter-spacing: 0.04em;
+    }
+
+    .hold-btn {
+      width: 100%;
+      padding: 18px 20px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, #1a202c 0%, #12161f 100%);
+      color: var(--text);
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      touch-action: none;
+      transition: transform 0.12s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .hold-btn.holding {
+      transform: scale(0.98);
+      border-color: var(--accent);
+      box-shadow: 0 0 28px rgba(139, 92, 246, 0.35);
+    }
+
+    .loss-msg {
+      min-height: 44px;
+      text-align: center;
+      font-size: 0.9rem;
+      color: #fca5a5;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .loss-msg.visible {
+      opacity: 1;
+    }
+
+    /* --- PANTALLA 2: IMPACTO Y AUTORIDAD --- */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px 14px;
+    }
+
+    .stat-number {
+      font-size: 1.55rem;
+      font-weight: 800;
+      color: var(--accent-glow);
+      line-height: 1.1;
+      margin-bottom: 4px;
+    }
+
+    .stat-label {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .info-box {
+      background: rgba(16, 185, 129, 0.08);
+      border: 1px solid rgba(16, 185, 129, 0.28);
+      border-radius: 14px;
+      padding: 16px;
+      font-size: 0.92rem;
+      color: #d1fae5;
+    }
+
+    .primary-btn {
+      width: 100%;
+      padding: 16px 20px;
+      border: none;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--accent) 0%, #6d28d9 100%);
+      color: #ffffff;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s ease, transform 0.12s ease;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .primary-btn:active { transform: scale(0.98); }
+    .primary-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .secondary-btn {
+      width: 100%;
+      padding: 14px 18px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--surface);
+      color: var(--text);
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    /* --- PANTALLA 3: MICRO-ENCUESTA --- */
+    .question-block {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .q-title {
+      font-size: 0.94rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .options {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .opt-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #0f131a;
+      font-size: 0.88rem;
+      color: #d6dce6;
+      cursor: pointer;
+      transition: border-color 0.15s ease, background 0.15s ease;
+    }
+
+    .opt-label input {
+      accent-color: var(--accent);
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+    }
+
+    .opt-label:has(input:checked) {
+      border-color: var(--accent);
+      background: rgba(139, 92, 246, 0.14);
+      color: #ffffff;
+    }
+
+    .text-input {
+      width: 100%;
+      padding: 13px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #0f131a;
+      color: var(--text);
+      font-size: 0.95rem;
+      outline: none;
+    }
+
+    .text-input:focus {
+      border-color: var(--accent);
+    }
+
+    .form-error {
+      color: #fca5a5;
+      font-size: 0.85rem;
+      text-align: center;
+      display: none;
+    }
+
+    /* --- PANTALLA 4: TARJETA GUARDIÁN --- */
+    .card-preview {
+      width: 100%;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+      display: block;
+    }
+
+    .status-note {
+      font-size: 0.78rem;
+      color: var(--muted);
+      text-align: center;
+    }
+  </style>
+</head>
+<body oncontextmenu="return false;">
+  <main class="app">
+
+    <!-- ==================== PANTALLA 1: ESTÍMULO DE TRANSACCIÓN ==================== -->
+    <section id="screen-1" class="screen active">
+      <div class="eyebrow">El Mapa de lo que Desaparece</div>
+      <h1>Si sueltas, desaparece.</h1>
+      <p class="center">
+        Esta es la silueta del <strong>Zamarrito Pechinegro</strong>. Mantén presionado el botón durante <strong>10 segundos</strong> para sostener su hábitat.
+      </p>
+
+      <div class="bird-stage" id="bird-stage">
+        <svg class="progress-ring" viewBox="0 0 240 240">
+          <defs>
+            <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#8b5cf6" />
+              <stop offset="100%" stop-color="#10b981" />
+            </linearGradient>
+          </defs>
+          <circle class="ring-bg" cx="120" cy="120" r="110" />
+          <circle class="ring-fill" id="ring-fill" cx="120" cy="120" r="110" />
+        </svg>
+
+        <!-- Silueta estilizada del Zamarrito Pechinegro (con garganta violeta y zamarros blancos) -->
+        <svg class="bird-svg" id="bird-svg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <!-- Ala posterior -->
+          <path d="M98 92 C72 62, 42 46, 26 44 C38 66, 58 84, 86 102 Z" fill="#065f46" />
+          <!-- Ala principal -->
+          <path d="M108 94 C86 54, 58 28, 36 22 C44 52, 64 80, 96 104 Z" fill="#047857" />
+          <!-- Cola bifurcada azul-negra -->
+          <path d="M84 128 L44 166 L64 156 L58 176 L94 134 Z" fill="#1e1b4b" />
+          <!-- Cuerpo oscuro -->
+          <path d="M94 134 C84 120, 88 94, 108 82 C122 74, 134 76, 140 84 C144 92, 136 112, 120 126 C110 134, 100 138, 94 134 Z" fill="#111827" />
+          <!-- Garganta violeta iridiscente -->
+          <path d="M126 84 C135 86, 138 96, 130 105 C122 108, 117 100, 118 92 Z" fill="#8b5cf6" />
+          <!-- Brillo esmeralda en dorso -->
+          <path d="M100 94 C108 84, 122 80, 130 82 C120 90, 110 96, 98 102 Z" fill="#10b981" opacity="0.85" />
+          <!-- Pico largo y recto -->
+          <path d="M139 81 L182 78 L140 85 Z" fill="#cbd5e1" />
+          <!-- Ojo -->
+          <circle cx="132" cy="82" r="2.2" fill="#ffffff" />
+          <!-- Zamarros blancos (plumas características en las patas) -->
+          <ellipse cx="106" cy="133" rx="8" ry="6" fill="#ffffff" />
+          <ellipse cx="114" cy="130" rx="7" ry="5.5" fill="#f8fafc" />
+        </svg>
+      </div>
+
+      <div class="timer-display" id="timer-display">0.0 s / 10.0 s</div>
+
+      <button type="button" class="hold-btn" id="hold-btn">
+        Mantener presionado aquí
+      </button>
+
+      <div class="loss-msg" id="loss-msg">
+        Así de rápido desaparece cuando dejamos de sostenerlo. Inténtalo de nuevo.
+      </div>
+    </section>
+
+    <!-- ==================== PANTALLA 2: IMPACTO Y AUTORIDAD ==================== -->
+    <section id="screen-2" class="screen">
+      <div class="eyebrow">Lo sostuviste 10 segundos</div>
+      <h2>En la vida real, necesita que no miremos hacia otro lado.</h2>
+      <p>
+        El <strong>Zamarrito Pechinegro</strong> (<em>Eriocnemis nigrivestis</em>) es el ave emblemática de Quito. Solo existe en las faldas del volcán Pichincha y está en <strong>Peligro Crítico</strong>.
+      </p>
+
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-number">&lt; 250</div>
+          <div class="stat-label">individuos adultos estimados en el mundo</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">45 min</div>
+          <div class="stat-label">distancia desde Quito hasta la Reserva Yanacocha</div>
+        </div>
+      </div>
+
+      <div class="info-box">
+        La <strong>Fundación Jocotoco</strong> protege su último refugio en la Reserva Yanacocha mediante conservación directa de bosque nublado. No es una crisis lejana: ocurre en nuestra propia montaña.
+      </div>
+
+      <button type="button" class="primary-btn" id="to-survey-btn">
+        Desbloquear mi tarjeta de Guardián (5 preguntas)
+      </button>
+    </section>
+
+    <!-- ==================== PANTALLA 3: MICRO-ENCUESTA ==================== -->
+    <section id="screen-3" class="screen">
+      <div class="eyebrow">Paso final — 30 segundos</div>
+      <h2>Tu percepción importa</h2>
+      <p>Responde estas 5 preguntas breves para generar tu tarjeta descargable de <strong>Guardián de 1 m²</strong>.</p>
+
+      <form id="survey-form" style="display:flex; flex-direction:column; gap:14px;">
+        <!-- Pregunta 1 -->
+        <div class="question-block">
+          <div class="q-title">1. Antes de escanear este código, ¿conocías a la Fundación Jocotoco?</div>
+          <div class="options">
+            <label class="opt-label"><input type="radio" name="q1" value="Sí, la conozco bien" required /> Sí, la conozco bien</label>
+            <label class="opt-label"><input type="radio" name="q1" value="Solo de nombre" /> Solo de nombre</label>
+            <label class="opt-label"><input type="radio" name="q1" value="Nunca la había escuchado" /> Nunca la había escuchado</label>
+          </div>
+        </div>
+
+        <!-- Pregunta 2 -->
+        <div class="question-block">
+          <div class="q-title">2. ¿Qué es lo primero que sueles pensar al ver una campaña de una ONG ambiental?</div>
+          <div class="options">
+            <label class="opt-label"><input type="radio" name="q2" value="Que hacen un trabajo necesario" required /> Que hacen un trabajo necesario</label>
+            <label class="opt-label"><input type="radio" name="q2" value="Que el problema está lejos de mí" /> Que el problema está lejos de mí</label>
+            <label class="opt-label"><input type="radio" name="q2" value="Desconfianza sobre el uso del dinero" /> Desconfianza sobre el uso del dinero</label>
+            <label class="opt-label"><input type="radio" name="q2" value="Indiferencia / suelo ignorarlas" /> Indiferencia / suelo ignorarlas</label>
+          </div>
+        </div>
+
+        <!-- Pregunta 3 -->
+        <div class="question-block">
+          <div class="q-title">3. ¿Sabías que el Zamarrito Pechinegro vive en el Pichincha y es ave emblemática de Quito?</div>
+          <div class="options">
+            <label class="opt-label"><input type="radio" name="q3" value="Sí, lo sabía" required /> Sí, lo sabía</label>
+            <label class="opt-label"><input type="radio" name="q3" value="No tenía idea" /> No tenía idea</label>
+          </div>
+        </div>
+
+        <!-- Pregunta 4 -->
+        <div class="question-block">
+          <div class="q-title">4. Al mantener presionada la pantalla (o ver desaparecer el ave), ¿qué predominó en ti?</div>
+          <div class="options">
+            <label class="opt-label"><input type="radio" name="q4" value="Urgencia / miedo a que desaparezca" required /> Urgencia / miedo a que desaparezca</label>
+            <label class="opt-label"><input type="radio" name="q4" value="Orgullo de que sea de aquí" /> Orgullo de que sea de aquí</label>
+            <label class="opt-label"><input type="radio" name="q4" value="Curiosidad técnica" /> Curiosidad técnica</label>
+            <label class="opt-label"><input type="radio" name="q4" value="Ninguna emoción particular" /> Ninguna emoción particular</label>
+          </div>
+        </div>
+
+        <!-- Pregunta 5 -->
+        <div class="question-block">
+          <div class="q-title">5. Después de esta experiencia, ¿qué acción estarías dispuesto a tomar hoy?</div>
+          <div class="options">
+            <label class="opt-label"><input type="radio" name="q5" value="Compartir la tarjeta en mis redes" required /> Compartir la tarjeta en mis redes</label>
+            <label class="opt-label"><input type="radio" name="q5" value="Visitar la web de Jocotoco / Reserva Yanacocha" /> Visitar la web de Jocotoco / Reserva Yanacocha</label>
+            <label class="opt-label"><input type="radio" name="q5" value="Aportar con una microdonación" /> Aportar con una microdonación</label>
+            <label class="opt-label"><input type="radio" name="q5" value="Ninguna por ahora" /> Ninguna por ahora</label>
+          </div>
+        </div>
+
+        <!-- Nombre opcional para la tarjeta -->
+        <div class="question-block">
+          <div class="q-title">Tu nombre o alias para tu tarjeta (opcional)</div>
+          <input type="text" id="guardian-name" class="text-input" maxlength="28" placeholder="Ej. Camila, Mateo, @usuario..." />
+        </div>
+
+        <div class="form-error" id="form-error">Por favor responde las 5 preguntas antes de continuar.</div>
+
+        <button type="submit" class="primary-btn" id="submit-btn">
+          Generar mi tarjeta de Guardián
+        </button>
+      </form>
+    </section>
+
+    <!-- ==================== PANTALLA 4: TARJETA DE GUARDIÁN ==================== -->
+    <section id="screen-4" class="screen">
+      <div class="eyebrow">Identificación Comunitaria</div>
+      <h1>Ya eres parte de quienes lo sostienen.</h1>
+
+      <canvas id="guardian-canvas" width="1080" height="1350" style="display:none;"></canvas>
+      <img id="card-preview" class="card-preview" alt="Tarjeta de Guardián de 1 metro cuadrado en el Pichincha" />
+
+      <button type="button" class="primary-btn" id="download-btn">
+        Descargar tarjeta para compartir
+      </button>
+
+      <a href="https://www.jocotoco.org.ec/" target="_blank" rel="noopener noreferrer" class="secondary-btn">
+        Conocer la Reserva Yanacocha (Fundación Jocotoco)
+      </a>
+
+      <div class="status-note" id="sync-status">Gracias por participar en este experimento de comunicación.</div>
+    </section>
+
+  </main>
+
+  <script>
+    // =========================================================================
+    // CONFIGURACIÓN: Pega aquí la URL de tu aplicación web de Google Apps Script
+    // =========================================================================
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyBFaDwAn6B1MU2fUT1qBJZmIfqIFTndQ1cpaLiHw4G_eEf2R8NgSUzSlTKG9vyxkbEKg/exec";
+    const TARGET_MS = 10000; // 10 segundos exactos
+
+    // --- Telemetría silenciosa de comportamiento ---
+    const telemetry = {
+      soltoAntes: false,
+      numeroIntentos: 0,
+      primerIntentoSegundos: null
+    };
+
+    // --- Referencias DOM ---
+    const screens = {
+      1: document.getElementById("screen-1"),
+      2: document.getElementById("screen-2"),
+      3: document.getElementById("screen-3"),
+      4: document.getElementById("screen-4")
+    };
+    const holdBtn = document.getElementById("hold-btn");
+    const birdSvg = document.getElementById("bird-svg");
+    const ringFill = document.getElementById("ring-fill");
+    const timerDisplay = document.getElementById("timer-display");
+    const lossMsg = document.getElementById("loss-msg");
+    const CIRCUMFERENCE = 691;
+
+    function goToScreen(num) {
+      Object.values(screens).forEach(s => s.classList.remove("active"));
+      screens[num].classList.add("active");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    // --- Sintetizador de bosque nublado y canto (Web Audio API sin archivos externos) ---
+    let audioCtx = null;
+    let ambientGain = null;
+    let chirpInterval = null;
+
+    function startSound() {
+      try {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!audioCtx) audioCtx = new AudioContextClass();
+        if (audioCtx.state === "suspended") audioCtx.resume();
+
+        // Fondo armónico suave (atmósfera de bosque)
+        ambientGain = audioCtx.createGain();
+        ambientGain.gain.setValueAtTime(0.001, audioCtx.currentTime);
+        ambientGain.gain.exponentialRampToValueAtTime(0.06, audioCtx.currentTime + 1.2);
+        ambientGain.connect(audioCtx.destination);
+
+        const osc = audioCtx.createOscillator();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(220, audioCtx.currentTime);
+        osc.connect(ambientGain);
+        osc.start();
+        ambientGain._osc = osc;
+
+        // Trinos agudos suaves (simulación de colibrí)
+        playChirp();
+        chirpInterval = setInterval(playChirp, 1400);
+      } catch (e) {
+        // Si el navegador bloquea audio, la experiencia visual continúa sin fallos
+      }
+    }
+
+    function playChirp() {
+      if (!audioCtx || audioCtx.state !== "running") return;
+      const now = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+
+      osc.type = "sine";
+      const baseFreq = 2600 + Math.random() * 900;
+      osc.frequency.setValueAtTime(baseFreq, now);
+      osc.frequency.exponentialRampToValueAtTime(baseFreq + 700, now + 0.08);
+      osc.frequency.exponentialRampToValueAtTime(baseFreq - 200, now + 0.16);
+
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.045, now + 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
+
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(now);
+      osc.stop(now + 0.2);
+    }
+
+    function stopSound() {
+      if (chirpInterval) {
+        clearInterval(chirpInterval);
+        chirpInterval = null;
+      }
+      if (ambientGain && audioCtx) {
+        try {
+          ambientGain.gain.cancelScheduledValues(audioCtx.currentTime);
+          ambientGain.gain.linearRampToValueAtTime(0.0001, audioCtx.currentTime + 0.15);
+          const oldOsc = ambientGain._osc;
+          setTimeout(() => { try { oldOsc.stop(); } catch (e) {} }, 180);
+        } catch (e) {}
+        ambientGain = null;
+      }
+    }
+
+    // --- Lógica de mantener presionado (10 segundos) ---
+    let isHolding = false;
+    let startTime = 0;
+    let rafId = null;
+    let completed = false;
+
+    function updateVisuals(progress) {
+      // Anillo de progreso
+      const offset = CIRCUMFERENCE * (1 - progress);
+      ringFill.style.strokeDashoffset = offset;
+
+      // Recuperación progresiva de color y brillo del Zamarrito
+      const gray = Math.round((1 - progress) * 100);
+      const opacity = (0.35 + progress * 0.65).toFixed(2);
+      const bright = (0.85 + progress * 0.25).toFixed(2);
+      birdSvg.style.filter = `grayscale(${gray}%) brightness(${bright}) opacity(${opacity})`;
+      birdSvg.style.transform = `scale(${(1 + progress * 0.08).toFixed(3)})`;
+
+      const seconds = (progress * (TARGET_MS / 1000)).toFixed(1);
+      timerDisplay.textContent = `${seconds} s / 10.0 s`;
+    }
+
+    function tick() {
+      if (!isHolding || completed) return;
+      const elapsed = performance.now() - startTime;
+      const progress = Math.min(elapsed / TARGET_MS, 1);
+      updateVisuals(progress);
+
+      if (progress >= 1) {
+        completed = true;
+        isHolding = false;
+        holdBtn.classList.remove("holding");
+        stopSound();
+        if (telemetry.primerIntentoSegundos === null) {
+          telemetry.primerIntentoSegundos = 10.0;
+        }
+        setTimeout(() => goToScreen(2), 350);
+      } else {
+        rafId = requestAnimationFrame(tick);
+      }
+    }
+
+    function handleHoldStart(e) {
+      e.preventDefault();
+      if (completed || isHolding) return;
+      isHolding = true;
+      telemetry.numeroIntentos += 1;
+      startTime = performance.now();
+      holdBtn.classList.add("holding");
+      holdBtn.textContent = "Sosteniendo su hábitat...";
+      lossMsg.classList.remove("visible");
+      startSound();
+      rafId = requestAnimationFrame(tick);
+    }
+
+    function handleHoldEnd(e) {
+      if (e) e.preventDefault();
+      if (!isHolding || completed) return;
+      isHolding = false;
+      cancelAnimationFrame(rafId);
+      stopSound();
+
+      const elapsedSec = Number(((performance.now() - startTime) / 1000).toFixed(1));
+      if (telemetry.primerIntentoSegundos === null) {
+        telemetry.primerIntentoSegundos = elapsedSec;
+      }
+
+      // Solo marcamos abandono real si sostuvo más de 0.3s (evita toques accidentales)
+      if (elapsedSec >= 0.3) {
+        telemetry.soltoAntes = true;
+        lossMsg.classList.add("visible");
+      }
+
+      holdBtn.classList.remove("holding");
+      holdBtn.textContent = "Mantener presionado aquí";
+      updateVisuals(0);
+    }
+
+    holdBtn.addEventListener("pointerdown", handleHoldStart);
+    window.addEventListener("pointerup", handleHoldEnd);
+    window.addEventListener("pointercancel", handleHoldEnd);
+    holdBtn.addEventListener("pointerleave", handleHoldEnd);
+
+    // --- Navegación Pantalla 2 -> 3 ---
+    document.getElementById("to-survey-btn").addEventListener("click", () => {
+      goToScreen(3);
+    });
+
+    // --- Envío de Encuesta + Telemetría a Google Sheets ---
+    const surveyForm = document.getElementById("survey-form");
+    const submitBtn = document.getElementById("submit-btn");
+    const formError = document.getElementById("form-error");
+
+    surveyForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const formData = new FormData(surveyForm);
+      const q1 = formData.get("q1");
+      const q2 = formData.get("q2");
+      const q3 = formData.get("q3");
+      const q4 = formData.get("q4");
+      const q5 = formData.get("q5");
+
+      if (!q1 || !q2 || !q3 || !q4 || !q5) {
+        formError.style.display = "block";
+        return;
+      }
+
+      formError.style.display = "none";
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Generando tu tarjeta...";
+
+      const guardianName = document.getElementById("guardian-name").value.trim() || "Guardián de Quito";
+
+      const payload = {
+        fecha: new Date().toISOString(),
+        q1_conoce_jocotoco: q1,
+        q2_percepcion_ong: q2,
+        q3_conoce_zamarrito: q3,
+        q4_emocion_predominante: q4,
+        q5_accion_dispuesta: q5,
+        solto_antes: telemetry.soltoAntes ? "Sí" : "No",
+        numero_intentos: telemetry.numeroIntentos,
+        primer_intento_seg: telemetry.primerIntentoSegundos ?? 10.0
+      };
+
+      // Envío silencioso a Google Sheets (no bloquea la tarjeta si falta configurar la URL)
+      if (SCRIPT_URL && !SCRIPT_URL.includes("TU_URL_DE_GOOGLE_APPS_SCRIPT")) {
+        try {
+          await fetch(SCRIPT_URL, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify(payload)
+          });
+        } catch (err) {
+          console.warn("No se pudo sincronizar en este momento:", err);
+        }
+      }
+
+      renderGuardianCard(guardianName);
+      goToScreen(4);
+    });
+
+    // --- Generador de Tarjeta PNG (Canvas 1080x1350) ---
+    function renderGuardianCard(name) {
+      const canvas = document.getElementById("guardian-canvas");
+      const ctx = canvas.getContext("2d");
+      const W = canvas.width;
+      const H = canvas.height;
+
+      // Fondo degradado oscuro de bosque nublado
+      const grad = ctx.createLinearGradient(0, 0, W, H);
+      grad.addColorStop(0, "#0b0d10");
+      grad.addColorStop(0.55, "#111827");
+      grad.addColorStop(1, "#062c22");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, W, H);
+
+      // Marco sutil
+      ctx.strokeStyle = "rgba(167, 139, 250, 0.35)";
+      ctx.lineWidth = 4;
+      ctx.strokeRect(48, 48, W - 96, H - 96);
+
+      // Halo luminoso central
+      const glow = ctx.createRadialGradient(W / 2, 470, 20, W / 2, 470, 280);
+      glow.addColorStop(0, "rgba(139, 92, 246, 0.35)");
+      glow.addColorStop(0.6, "rgba(16, 185, 129, 0.12)");
+      glow.addColorStop(1, "rgba(0, 0, 0, 0)");
+      ctx.fillStyle = glow;
+      ctx.fillRect(0, 150, W, 650);
+
+      // Encabezado
+      ctx.fillStyle = "#9aa4b5";
+      ctx.font = "600 28px -apple-system, BlinkMacSystemFont, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("EL MAPA DE LO QUE DESAPARECE", W / 2, 135);
+
+      // Emblema geométrico del Zamarrito en el Canvas
+      ctx.save();
+      ctx.translate(W / 2 - 190, 260);
+      ctx.scale(1.9, 1.9);
+      const paths = [
+        { d: "M98 92 C72 62, 42 46, 26 44 C38 66, 58 84, 86 102 Z", fill: "#065f46" },
+        { d: "M108 94 C86 54, 58 28, 36 22 C44 52, 64 80, 96 104 Z", fill: "#10b981" },
+        { d: "M84 128 L44 166 L64 156 L58 176 L94 134 Z", fill: "#312e81" },
+        { d: "M94 134 C84 120, 88 94, 108 82 C122 74, 134 76, 140 84 C144 92, 136 112, 120 126 C110 134, 100 138, 94 134 Z", fill: "#0f172a" },
+        { d: "M126 84 C135 86, 138 96, 130 105 C122 108, 117 100, 118 92 Z", fill: "#a78bfa" },
+        { d: "M139 81 L182 78 L140 85 Z", fill: "#e2e8f0" }
+      ];
+      paths.forEach(p => {
+        ctx.fillStyle = p.fill;
+        ctx.fill(new Path2D(p.d));
+      });
+      // Zamarros blancos
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath(); ctx.ellipse(106, 133, 8, 6, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(114, 130, 7, 5.5, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+
+      // Título principal
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "800 58px -apple-system, BlinkMacSystemFont, sans-serif";
+      ctx.fillText("GUARDIÁN DE 1 m²", W / 2, 740);
+
+      ctx.fillStyle = "#a78bfa";
+      ctx.font = "700 44px -apple-system, BlinkMacSystemFont, sans-serif";
+      ctx.fillText(name, W / 2, 820);
+
+      // Línea divisoria
+      ctx.strokeStyle = "rgba(255,255,255,0.18)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(240, 880);
+      ctx.lineTo(W - 240, 880);
+      ctx.stroke();
+
+      // Texto de pertenencia comunitaria
+      ctx.fillStyle = "#d1d5db";
+      ctx.font = "400 32px -apple-system, BlinkMacSystemFont, sans-serif";
+      ctx.fillText("Sostuve el hábitat del Zamarrito Pechinegro,", W / 2, 955);
+      ctx.fillText("ave emblemática de Quito en el volcán Pichincha.", W / 2, 1005);
+
+      ctx.fillStyle = "#10b981";
+      ctx.font = "700 30px -apple-system, BlinkMacSystemFont, sans-serif";
+      ctx.fillText("Quedan menos de 250 individuos.", W / 2, 1085);
+
+      // Pie de página
+      ctx.fillStyle = "#9aa4b5";
+      ctx.font = "500 26px -apple-system, BlinkMacSystemFont, sans-serif";
+      ctx.fillText("Reserva Yanacocha · Fundación Jocotoco", W / 2, 1230);
+
+      const dataUrl = canvas.toDataURL("image/png");
+      document.getElementById("card-preview").src = dataUrl;
+
+      document.getElementById("download-btn").onclick = () => {
+        const a = document.createElement("a");
+        a.href = dataUrl;
+        a.download = "Guardian-Zamarrito-Pichincha.png";
+        a.click();
+      };
+    }
+  </script>
+</body>
+</html>
