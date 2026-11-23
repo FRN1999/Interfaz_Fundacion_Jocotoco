@@ -487,13 +487,13 @@
           </div>
         </div>
 
-        <!-- Nombre opcional para la tarjeta -->
+<!-- Nombre obligatorio para la tarjeta -->
         <div class="question-block">
-          <div class="q-title">Tu nombre o alias para tu tarjeta (opcional)</div>
-          <input type="text" id="guardian-name" class="text-input" maxlength="28" placeholder="Ej. Camila, Mateo, @usuario..." />
+          <div class="q-title">Tu nombre o alias para tu tarjeta (obligatorio)</div>
+          <input type="text" id="guardian-name" class="text-input" maxlength="28" placeholder="Ej. Camila, Mateo, @usuario..." required />
         </div>
 
-        <div class="form-error" id="form-error">Por favor responde las 5 preguntas antes de continuar.</div>
+        <div class="form-error" id="form-error">Por favor responde las 5 preguntas e ingresa tu nombre antes de continuar.</div>
 
         <button type="submit" class="primary-btn" id="submit-btn">
           Generar mi tarjeta de Guardián
@@ -737,7 +737,18 @@
       submitBtn.disabled = true;
       submitBtn.textContent = "Generando tu tarjeta...";
 
-      const guardianName = document.getElementById("guardian-name").value.trim() || "Guardián de Quito";
+    const guardianInput = document.getElementById("guardian-name");
+      const guardianName = guardianInput.value.trim();
+
+      if (!q1 || !q2 || !q3 || !q4 || !q5 || !guardianName) {
+        formError.style.display = "block";
+        if (!guardianName) guardianInput.focus();
+        return;
+      }
+
+      formError.style.display = "none";
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Generando tu tarjeta...";
 
       const payload = {
         fecha: new Date().toISOString(),
